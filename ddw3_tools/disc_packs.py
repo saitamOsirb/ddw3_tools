@@ -19,7 +19,9 @@ def plausible_pack(data: bytes, size: int, *, max_entries: int = 65536) -> bool:
         return False
     offsets = struct.unpack_from(f"<{first // 4}I", data)
     nonzero = [x for x in offsets if x]
-    return bool(nonzero) and all(first <= x < size for x in nonzero)
+    return (bool(nonzero) and all(first <= x < size for x in nonzero)
+            and nonzero[0] == first
+            and all(a <= b for a, b in zip(nonzero, nonzero[1:])))
 
 
 def scan_disc_packs(source: Path, output: Path, *, max_files: int = 100000,
@@ -56,7 +58,7 @@ def scan_disc_packs(source: Path, output: Path, *, max_files: int = 100000,
                 try:
                     extract_pack(packed, target / "members")
                     match["extracted"] = True
-                except ValueError as exc:
+                except (ValueError, OSError) as exc:
                     match["extracted"] = False
                     match["error"] = str(exc)
     finally:
