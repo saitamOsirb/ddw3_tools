@@ -71,3 +71,30 @@ def test_plain_tim_still_supported(tmp_path):
     manifest = extract_sprites(disc, tmp_path / "out")
     assert manifest["disc_layout"] == "plain"
     assert manifest["tim_count"] == 1
+
+
+def test_tim_positions_and_external_palette():
+    # Indexed TIM without embedded CLUT can be decoded only with a supplied palette.
+    pixels = bytes((0x10, 0x00))
+    image = MAGIC + struct.pack("<I", 0) + struct.pack("<IHHHH", 14, 12, 34, 1, 1) + pixels
+    assert parse_tim(image, 0) is None
+    palette = tuple([0, 31] + [0] * 14)
+    tim = parse_tim(image, 0, external_palette=palette)
+    assert tim is not None
+    assert tim["image_position"] == [12, 34]
+    assert tim["clut_position"] is None
+    assert tim["external_palette"] is True
+    assert rgba(tim)[4:8] == bytes((255, 0, 0, 255))
+    assert parse_tim(image, 0, external_palette=(0, 31)) is None
+
+
+def test_embedded_clut_positions_and_truncated_blocks():
+    palette = struct.pack("<16H", *([0, 31] + [0] * 14))
+    clut = struct.pack("<IHHHH", 12 + len(palette), 100, 200, 16, 1) + palette
+    img = struct.pack("<IHHHH", 14, 50, 60, 1, 1) + bytes((0x10, 0))
+    image = MAGIC + struct.pack("<I", 8) + clut + img
+    tim = parse_tim(image, 0)
+    assert tim["clut_position"] == [100, 200]
+    assert tim["image_position"] == [50, 60]
+    assert tim["external_palette"] is False
+    assert parse_tim(image[:-1], 0) is None
