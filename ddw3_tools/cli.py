@@ -17,6 +17,7 @@ from .disc_survey import survey_regions
 from .rlen_extract import extract_rlen_at
 from .rlen_neighborhood import inspect_rlen_neighborhood
 from .neighbor_comparison import compare_neighbor_atlases
+from .related_atlases import compare_related_atlases
 from .rlen_batch import extract_rlen_batch
 from .resource_inspector import inspect_extractions
 from .prefix_inspector import inspect_prefixes
@@ -198,6 +199,12 @@ def build_parser() -> argparse.ArgumentParser:
     batch.add_argument("--survey", required=True)
     batch.add_argument("--output", required=True)
     batch.add_argument("--max-blocks", type=int, default=100)
+
+    related = sub.add_parser("atlases-related", help="Buscar coincidencias exactas entre atlas 24233 y grupos 24241.")
+    related.add_argument("--input", required=True)
+    related.add_argument("--aligned", required=True)
+    related.add_argument("--output", required=True)
+    related.add_argument("--min-opaque", type=int, default=24)
 
     compare = sub.add_parser("neighbors-compare", help="Comparar los seis recursos RLEN vecinos del atlas 24241.")
     compare.add_argument("--input", required=True)
@@ -414,6 +421,14 @@ def execute(namespace: argparse.Namespace) -> None:
                                     max_blocks=namespace.max_blocks)
         print(f"RLEN intentados: {result['attempted']}; "
               f"correctos: {result['successful']}; PNG: {result['png_count']}")
+        return
+    if command == "atlases-related":
+        result = compare_related_atlases(
+            Path(namespace.input), Path(namespace.aligned), Path(namespace.output),
+            min_opaque=namespace.min_opaque)
+        matches = sum(len(p["matches"]) for g in result["groups"] for p in g["palettes"])
+        print(f"Grupos: {len(result['groups'])}; coincidencias exactas de mascara: {matches}; "
+              f"informe: {Path(namespace.output) / 'related_atlases.json'}")
         return
     if command == "neighbors-compare":
         result = compare_neighbor_atlases(Path(namespace.input), Path(namespace.output))
