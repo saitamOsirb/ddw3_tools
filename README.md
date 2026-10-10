@@ -57,6 +57,34 @@ Los comandos `index`, `list`, `extract` son adaptadores del CLI jPSXdec; no impl
 
 Consulta `py -m ddw3_tools <comando> --help` para opciones. El proyecto no contiene ROMs ni recursos originales.
 
+## Descargar assets de mapas desde ddw3
+
+El repositorio [ddw3](https://github.com/saitamOsirb/ddw3) contiene recursos de mapas de **Digimon World 2003**, entre ellos:
+- `map-tile/dw2003/z_stage/<stage>/*.toml`: definición de capas, offsets y recortes.
+- `tim/dw2003/z_stage/<stage>/*.png`: texturas PNG extraídas.
+- `tim/dw2003/z_stage/<stage>/*.toml`: metadatos de texturas.
+- `*.clut.png`: paletas de color cuando existen.
+
+Primero, listar un stage sin descargar:
+
+```powershell
+py -m ddw3_tools maps-download --stage s200pack --output "D:\\developer\\ddw3_maps" --list-only
+```
+
+Descargar el stage seleccionado:
+
+```powershell
+py -m ddw3_tools maps-download --stage s200pack --output "D:\\developer\\ddw3_maps"
+```
+
+Descargar todos los stages publicados en esas carpetas:
+
+```powershell
+py -m ddw3_tools maps-download --output "D:\\developer\\ddw3_maps"
+```
+
+El comando preserva las rutas del repositorio y omite archivos ya descargados. Utiliza la API pública de GitHub, por lo que puede alcanzar límites de solicitudes en descargas grandes. **No reconstruye todavía los mapas jugables de Godot**: descarga las texturas y los manifiestos necesarios para el próximo paso de composición de capas y atlas. Tampoco descarga la ISO original.
+
 ## Alcance siguiente
 
 - Identificación y conversión de sprites TIM y paletas.
