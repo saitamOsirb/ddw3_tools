@@ -14,7 +14,7 @@ def u32(data: bytes, pos: int) -> int:
     return struct.unpack_from("<I", data, pos)[0]
 
 
-def parse_tim(data: bytes, offset: int) -> dict | None:
+def parse_tim(data: bytes, offset: int, *, external_palette: tuple[int, ...] | None = None) -> dict | None:
     """Validate one complete TIM structure at offset, without guessing dimensions."""
     if offset + 8 > len(data) or data[offset:offset + 4] != MAGIC:
         return None
@@ -24,11 +24,13 @@ def parse_tim(data: bytes, offset: int) -> dict | None:
         return None
     pos = offset + 8
     palettes = []
+    clut_position = None
     if flags & 8:
         block = _block(data, pos)
         if block is None:
             return None
-        _, _, cw, ch, raw, pos = block
+        cx, cy, cw, ch, raw, pos = block
+        clut_position = [cx, cy]
         if mode not in (0, 1) or cw == 0 or ch == 0 or len(raw) != cw * ch * 2:
             return None
         count = 16 if mode == 0 else 256
@@ -37,11 +39,15 @@ def parse_tim(data: bytes, offset: int) -> dict | None:
         values = struct.unpack("<" + "H" * (cw * ch), raw)
         palettes = [values[i:i + count] for i in range(0, len(values), count)]
     elif mode in (0, 1):
-        return None
+        if external_palette is None or len(external_palette) != (16 if mode == 0 else 256):
+            return None
+        if any(not isinstance(v, int) or not 0 <= v <= 65535 for v in external_palette):
+            return None
+        palettes = [external_palette]
     block = _block(data, pos)
     if block is None:
         return None
-    _, _, words, height, pixels, end = block
+    ix, iy, words, height, pixels, end = block
     if not words or not height or words > 4096 or height > 4096:
         return None
     stride = words * 2
@@ -51,7 +57,9 @@ def parse_tim(data: bytes, offset: int) -> dict | None:
     if width < 1 or width > 8192:
         return None
     return {"offset": offset, "end": end, "width": width, "height": height,
-            "bpp": MODES[mode], "stride": stride, "pixels": pixels, "palettes": palettes}
+            "bpp": MODES[mode], "stride": stride, "pixels": pixels, "palettes": palettes,
+            "image_position": [ix, iy], "clut_position": clut_position,
+            "external_palette": bool(external_palette is not None and not (flags & 8))}
 
 
 def _block(data: bytes, pos: int):
@@ -180,6 +188,9 @@ def extract_sprites(source: Path, output: Path, *, max_images: int = 10000) -> d
             write_png(output / name, tim["width"], tim["height"], rgba(tim, i))
             files.append(name)
         records.append({"offset": physical, "logical_offset": offset,
+                        "image_position": tim["image_position"],
+                        "clut_position": tim["clut_position"],
+                        "external_palette": tim["external_palette"],
                         "length": tim["end"] - offset,
                         "width": tim["width"], "height": tim["height"],
                         "bpp": tim["bpp"], "palette_count": len(tim["palettes"]),
