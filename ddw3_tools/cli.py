@@ -89,6 +89,7 @@ def build_parser() -> argparse.ArgumentParser:
     inventory = sub.add_parser("assets-inventory", help="Inventariar entradas PACK y TIM internos.")
     inventory.add_argument("--input", required=True, help="Carpeta de pack-extract o disc-packs --extract.")
     inventory.add_argument("--output", required=True, help="Ruta del JSON de inventario.")
+    inventory.add_argument("--export-tim", action="store_true", help="Exportar PNG de TIM incrustados.")
 
     catalog = sub.add_parser("disc-catalog", help="Catalogar archivos ISO9660 dentro de un BIN/ISO PS1.")
     catalog.add_argument("--disc", required=True)
@@ -144,7 +145,8 @@ def execute(namespace: argparse.Namespace) -> None:
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
         return
     if command == "assets-inventory":
-        result = inventory_packs(Path(namespace.input), Path(namespace.output))
+        result = inventory_packs(Path(namespace.input), Path(namespace.output),
+                                 export_tim=namespace.export_tim)
         print(f"Contenedores: {result['pack_manifests']}; recursos: {result['members']}; "
               f"tipos: {result['classifications']}")
         return
