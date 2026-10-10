@@ -16,6 +16,7 @@ from .disc_layout import analyze_layout
 from .disc_survey import survey_regions
 from .rlen_extract import extract_rlen_at
 from .rlen_batch import extract_rlen_batch
+from .resource_inspector import inspect_extractions
 import shutil
 import subprocess
 import sys
@@ -90,6 +91,11 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--disc", required=True)
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
+
+    inspect = sub.add_parser("resources-inspect", help="Inventariar TIM, CLUT, VRAM y bytes desconocidos en datos RLEN ya extraidos.")
+    inspect.add_argument("--input", required=True, help="Carpeta rlen_batch/rlen_full o decoded.bin individual.")
+    inspect.add_argument("--output", required=True, help="Archivo JSON del inventario.")
+    inspect.add_argument("--max-files", type=int, default=10000)
 
     batch = sub.add_parser("rlen-batch", help="Extraer en lote firmas RLEN de un informe disc-survey.")
     batch.add_argument("--disc", required=True)
@@ -176,6 +182,14 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "resources-inspect":
+        result = inspect_extractions(Path(namespace.input), Path(namespace.output),
+                                     max_files=namespace.max_files)
+        print(f"Binarios: {result['file_count']}; "
+              f"TIM validados: {result['summary'].get('tim_count', 0)}; "
+              f"errores: {result['summary'].get('errors', 0)}; "
+              f"informe: {namespace.output}")
         return
     if command == "rlen-batch":
         result = extract_rlen_batch(file_path(namespace.disc),
