@@ -83,6 +83,25 @@ def extract_candidate_frames(source: Path, output: Path, *,
             palette_entries = []
             for palette_index in range(min(len(tim["palettes"]), max_palettes)):
                 pixels = rgba(tim, palette_index)
+                total_pixels = tim["width"] * tim["height"]
+                visible_pixels = sum(pixels[i] != 0 for i in range(3, len(pixels), 4))
+                coverage = visible_pixels / total_pixels
+                if visible_pixels == 0:
+                    stats["empty_palettes"] += 1
+                    palette_entries.append({"palette": palette_index,
+                                            "visible_pixels": 0,
+                                            "coverage": 0.0,
+                                            "status": "empty",
+                                            "regions": []})
+                    continue
+                if coverage >= 0.98:
+                    stats["full_coverage_palettes"] += 1
+                    palette_entries.append({"palette": palette_index,
+                                            "visible_pixels": visible_pixels,
+                                            "coverage": coverage,
+                                            "status": "nearly_opaque",
+                                            "regions": []})
+                    continue
                 regions = connected_regions(
                     pixels, tim["width"], tim["height"],
                     min_pixels=min_pixels, max_regions=max_regions)
@@ -98,7 +117,11 @@ def extract_candidate_frames(source: Path, output: Path, *,
                     filename = f"candidate_{i:03d}.png"
                     write_png(folder / filename, w, h, crop)
                     out_regions.append({**region, "png": (folder / filename).relative_to(output).as_posix()})
-                palette_entries.append({"palette": palette_index, "regions": out_regions})
+                palette_entries.append({"palette": palette_index,
+                                        "visible_pixels": visible_pixels,
+                                        "coverage": coverage,
+                                        "status": "partial",
+                                        "regions": out_regions})
                 stats["regions_exported"] += len(out_regions)
             origin = {}
             manifest = path.parent / "rlen_manifest.json"
@@ -112,13 +135,13 @@ def extract_candidate_frames(source: Path, output: Path, *,
             stats["atlases_exported"] += 1
         except (OSError, ValueError, IndexError, json.JSONDecodeError) as exc:
             stats["errors"] += 1
-            stats.setdefault("unused", 0)
     result = {
         "source": str(source), "filter": contains,
         "counts": dict(stats), "atlases": atlases,
         "note": ("Eight-connected opaque components are only segmentation candidates; "
                  "they are not confirmed characters, frames, directions, or animations. "
-                 "Zero-valued CLUT colors follow the existing PNG decoder transparency policy."),
+                 "Zero-valued CLUT colors follow the existing PNG decoder transparency policy. "
+                 "Nearly opaque palettes (>=98%) are reported but not segmented."),
     }
     (output / "frame_candidates.json").write_text(
         json.dumps(result, indent=2), encoding="utf-8")
