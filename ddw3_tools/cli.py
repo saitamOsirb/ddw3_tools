@@ -7,6 +7,7 @@ from pathlib import Path
 from .maps import download_maps
 from .sprites import extract_sprites
 from .sprites_report import build_report
+from .packs import extract_pack
 import shutil
 import subprocess
 import sys
@@ -82,6 +83,11 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
 
+    pack = sub.add_parser("pack-extract", help="Extraer entradas de un contenedor PACK DW3 y previsualizar TIM completos.")
+    pack.add_argument("--input", required=True, help="Archivo PACK/BIN individual, no la imagen completa del disco.")
+    pack.add_argument("--output", required=True, help="Carpeta para entradas y manifiesto.")
+    pack.add_argument("--max-entries", type=int, default=65536)
+
     report = sub.add_parser("sprites-report", help="Diagnosticar contenido y transparencias de TIM exportados.")
     report.add_argument("--input", required=True, help="Carpeta con manifest.json y PNG.")
     report.add_argument("--output", required=True, help="Ruta del informe JSON.")
@@ -118,6 +124,12 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "pack-extract":
+        result = extract_pack(file_path(namespace.input), Path(namespace.output),
+                              max_entries=namespace.max_entries)
+        print(f"Entradas PACK: {len(result['entries'])}; TIM completos: "
+              f"{sum(e['tim'] is not None for e in result['entries'])}")
         return
     if command == "sprites-report":
         report = build_report(Path(namespace.input), Path(namespace.output))
