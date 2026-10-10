@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ddw3-tools"
+version = "0.1.0"
+description = "Digimon World 3 PS1 video extraction and Godot OGV conversion tools"
+requires-python = ">=3.11"
+
+[project.scripts]
+ddw3 = "ddw3_tools.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["ddw3_tools*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
