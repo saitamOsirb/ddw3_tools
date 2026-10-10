@@ -74,6 +74,19 @@ py -m ddw3_tools maps-download --output "D:\DigimonExtract\maps"
 
 Las rutas se conservan bajo `map-tile/dw2003/z_stage/<stage>/` y `tim/dw2003/z_stage/<stage>/`. Puede haber límites de solicitudes de GitHub. Los archivos existentes se omiten; `--max-files` permite limitar la cantidad.
 
+
+## Extracción experimental de imágenes TIM (sprites y texturas)
+
+La herramienta ahora puede escanear bytes de una imagen BIN/ISO buscando estructuras **TIM estándar de PlayStation 1** y exportar sus imágenes como PNG RGBA. No necesita jPSXdec ni FFmpeg para este comando:
+
+```powershell
+py -m ddw3_tools sprites-extract --disc "D:\\DigimonExtract\\original\\Digimon World 3.bin" --output "D:\\DigimonExtract\\sprites"
+```
+
+También admite `--max-images 10000` (límite de estructuras TIM). Crea archivos `tim_<offset>_pal_<n>.png` y `manifest.json` con offsets, dimensiones, profundidad de color, paletas y archivos generados. Soporta TIM de 4, 8, 16 y 24 bits; para 4/8 bits exporta las variantes CLUT. En paletas indexadas el color negro cero se trata como transparente; la interpretación de transparencia PS1/STP puede requerir ajustes manuales.
+
+**Limitaciones:** es un escáner de TIM estándar, no un extractor completo de sprites animados. Puede detectar texturas, fondos e interfaces, no solo personajes; no recompone animaciones ni decodifica contenedores comprimidos o formatos propietarios. Procesa la imagen completa en memoria, por lo que requiere RAM suficiente. Los resultados dependen de la versión/región y organización de la imagen.
+
 ## 7. Clasificación de recursos y límites
 
 | Recurso | Estado actual | Procedimiento |
@@ -82,7 +95,7 @@ Las rutas se conservan bajo `map-tile/dw2003/z_stage/<stage>/` y `tim/dw2003/z_s
 | Video OGV para Godot | Compatible | `convert`, `convert-dir` |
 | PNG/TOML de mapas publicados en ddw3 | Descarga disponible | `maps-download` |
 | Inspección general de directorios de la ISO | No implementado | Usar un explorador de imágenes de disco por separado |
-| Extracción directa de sprites TIM desde ISO | No implementado | Desarrollo pendiente |
+| Escaneo de TIM estándar desde BIN/ISO | Disponible experimentalmente | `sprites-extract`; PNG y manifiesto |
 | Reconstrucción de mapas jugables / atlas Godot | No implementado | Desarrollo pendiente |
 | Exportación de audio, modelos o scripts de juego | No implementado | Desarrollo pendiente |
 
