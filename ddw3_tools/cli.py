@@ -18,6 +18,7 @@ from .rlen_extract import extract_rlen_at
 from .rlen_batch import extract_rlen_batch
 from .resource_inspector import inspect_extractions
 from .prefix_inspector import inspect_prefixes
+from .header_structure import inspect_header_structure
 import shutil
 import subprocess
 import sys
@@ -92,6 +93,11 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--disc", required=True)
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
+
+    structure = sub.add_parser("headers-structure", help="Verificar cabeceras 16+12*N y distribuir campos sin atribuir significado.")
+    structure.add_argument("--input", required=True)
+    structure.add_argument("--output", required=True)
+    structure.add_argument("--max-files", type=int, default=10000)
 
     headers = sub.add_parser("headers-inspect", help="Agrupar cabeceras desconocidas anteriores a las texturas TIM.")
     headers.add_argument("--input", required=True, help="Carpeta rlen_full con decoded.bin.")
@@ -188,6 +194,15 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "headers-structure":
+        result = inspect_header_structure(Path(namespace.input), Path(namespace.output),
+                                          max_files=namespace.max_files)
+        c = result["counts"]
+        print(f"Cabeceras: {c.get('with_prefix', 0)}; "
+              f"forma 16+12*N: {c.get('shape_match', 0)}; "
+              f"longitud en primer campo: {c.get('length_match', 0)}; "
+              f"informe: {namespace.output}")
         return
     if command == "headers-inspect":
         result = inspect_prefixes(Path(namespace.input), Path(namespace.output),
