@@ -63,7 +63,7 @@ def _over(canvas: bytearray, dest_index: int, source: bytes, src_index: int) -> 
 def compose_sprite(aligned_dir: Path, resources_dir: Path, recipe_path: Path,
                    output: Path) -> dict:
     aligned = _read_aligned(aligned_dir)
-    recipe = json.loads(recipe_path.read_text(encoding="utf-8"))
+    recipe = json.loads(recipe_path.read_text(encoding="utf-8-sig"))
     if recipe.get("source") != aligned["source"]:
         raise ValueError("La receta no corresponde a este atlas")
     if not isinstance(recipe.get("palette"), int):
