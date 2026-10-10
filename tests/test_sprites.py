@@ -35,3 +35,39 @@ def test_tim_4bit_two_palettes():
 
 def test_reject_truncated():
     assert parse_tim(MAGIC + bytes(4), 0) is None
+
+
+def test_raw_mode2_form1_tim_crosses_sector(tmp_path):
+    """Sector headers must never appear inside decoded TIM pixels."""
+    # A 16-bit TIM with 1100 pixels spans two logical sectors.
+    pixels = struct.pack("<1100H", *([31] * 1100))
+    image = MAGIC + struct.pack("<I", 2) + block(1100, 1, pixels)
+    payload = bytes(2000) + image
+    payload += bytes((-len(payload)) % 2048)
+
+    def sector(chunk):
+        header = b"\x00" + b"\xff" * 10 + b"\x00"
+        return (header + bytes((0, 0, 0, 2)) +
+                bytes((0, 0, 0, 0)) * 2 + chunk + bytes(280))
+
+    disc = tmp_path / "disc.bin"
+    disc.write_bytes(b"".join(sector(payload[i:i + 2048])
+                              for i in range(0, len(payload), 2048)))
+    out = tmp_path / "out"
+    manifest = extract_sprites(disc, out)
+    assert manifest["disc_layout"] == "raw2352"
+    assert manifest["tim_count"] == 1
+    item = manifest["images"][0]
+    assert item["logical_offset"] == 2000
+    assert item["offset"] == 24 + 2000
+    assert item["width"] == 1100
+    assert item["height"] == 1
+
+
+def test_plain_tim_still_supported(tmp_path):
+    image = MAGIC + struct.pack("<I", 2) + block(1, 1, struct.pack("<H", 31))
+    disc = tmp_path / "plain.iso"
+    disc.write_bytes(image)
+    manifest = extract_sprites(disc, tmp_path / "out")
+    assert manifest["disc_layout"] == "plain"
+    assert manifest["tim_count"] == 1
