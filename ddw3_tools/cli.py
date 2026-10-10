@@ -12,6 +12,7 @@ from .disc_files import catalog_disc
 from .disc_packs import scan_disc_packs
 from .assets_inventory import inventory_packs
 from .embedded_packs import scan_embedded_packs
+from .disc_layout import analyze_layout
 import shutil
 import subprocess
 import sys
@@ -87,6 +88,10 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
 
+    layout = sub.add_parser("disc-layout", help="Medir regiones físicas no catalogadas por ISO9660.")
+    layout.add_argument("--disc", required=True)
+    layout.add_argument("--output", required=True)
+
     embedded = sub.add_parser("disc-scan-embedded", help="Buscar cabeceras PACK alineadas a sectores dentro de archivos grandes.")
     embedded.add_argument("--disc", required=True)
     embedded.add_argument("--output", required=True)
@@ -150,6 +155,12 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "disc-layout":
+        result = analyze_layout(file_path(namespace.disc), Path(namespace.output))
+        print(f"Sectores: {result['total_sectors']}; "
+              f"regiones no catalogadas: {len(result['unlisted_ranges'])}; "
+              f"informe: {namespace.output}")
         return
     if command == "disc-scan-embedded":
         result = scan_embedded_packs(file_path(namespace.disc), Path(namespace.output),
