@@ -28,6 +28,7 @@ from .sprite_candidates import export_sprite_candidates
 from .frame_candidates import extract_candidate_frames
 from .frame_grouping import export_grouped_candidates
 from .aligned_candidates import export_aligned_candidates
+from .sprite_composer import make_composition_recipe, compose_sprite
 import shutil
 import subprocess
 import sys
@@ -102,6 +103,17 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--disc", required=True)
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
+
+    recipe = sub.add_parser("sprite-recipe", help="Crear receta JSON editable de composicion desde frames-align.")
+    recipe.add_argument("--aligned", required=True)
+    recipe.add_argument("--output", required=True)
+    recipe.add_argument("--palette", type=int, default=0)
+
+    compose = sub.add_parser("sprite-compose", help="Componer piezas del TIM original usando una receta JSON.")
+    compose.add_argument("--aligned", required=True)
+    compose.add_argument("--resources", required=True)
+    compose.add_argument("--recipe", required=True)
+    compose.add_argument("--output", required=True)
 
     aligned = sub.add_parser("frames-align", help="Exportar recortes con coordenadas compartidas entre paletas CLUT.")
     aligned.add_argument("--input", required=True)
@@ -264,6 +276,19 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "sprite-recipe":
+        result = make_composition_recipe(
+            Path(namespace.aligned), Path(namespace.output),
+            palette=namespace.palette)
+        print(f"Receta editable: {namespace.output}; piezas: {len(result['parts'])}")
+        return
+    if command == "sprite-compose":
+        result = compose_sprite(
+            Path(namespace.aligned), Path(namespace.resources),
+            Path(namespace.recipe), Path(namespace.output))
+        print(f"PNG: {namespace.output}; tamaño: {result['size'][0]}x{result['size'][1]}; "
+              f"piezas: {len(result['parts'])}")
         return
     if command == "frames-align":
         result = export_aligned_candidates(
