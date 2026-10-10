@@ -16,6 +16,7 @@ from .disc_layout import analyze_layout
 from .disc_survey import survey_regions
 from .rlen_extract import extract_rlen_at
 from .rlen_neighborhood import inspect_rlen_neighborhood
+from .neighbor_comparison import compare_neighbor_atlases
 from .rlen_batch import extract_rlen_batch
 from .resource_inspector import inspect_extractions
 from .prefix_inspector import inspect_prefixes
@@ -197,6 +198,10 @@ def build_parser() -> argparse.ArgumentParser:
     batch.add_argument("--survey", required=True)
     batch.add_argument("--output", required=True)
     batch.add_argument("--max-blocks", type=int, default=100)
+
+    compare = sub.add_parser("neighbors-compare", help="Comparar los seis recursos RLEN vecinos del atlas 24241.")
+    compare.add_argument("--input", required=True)
+    compare.add_argument("--output", required=True)
 
     nearby = sub.add_parser("rlen-neighborhood", help="Inspeccion de bytes y firmas RLEN cerca de un recurso, sin inferir animaciones.")
     nearby.add_argument("--disc", required=True)
@@ -409,6 +414,11 @@ def execute(namespace: argparse.Namespace) -> None:
                                     max_blocks=namespace.max_blocks)
         print(f"RLEN intentados: {result['attempted']}; "
               f"correctos: {result['successful']}; PNG: {result['png_count']}")
+        return
+    if command == "neighbors-compare":
+        result = compare_neighbor_atlases(Path(namespace.input), Path(namespace.output))
+        print(f"TIM validos: {sum(r['status'] == 'tim' for r in result['resources'])}/"
+              f"{len(result['resources'])}; informe: {Path(namespace.output) / 'neighbor_comparison.json'}")
         return
     if command == "rlen-neighborhood":
         result = inspect_rlen_neighborhood(
