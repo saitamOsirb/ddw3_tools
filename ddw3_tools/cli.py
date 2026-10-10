@@ -20,6 +20,7 @@ from .resource_inspector import inspect_extractions
 from .prefix_inspector import inspect_prefixes
 from .header_structure import inspect_header_structure
 from .record_analysis import analyze_records
+from .region_preview import preview_regions
 import shutil
 import subprocess
 import sys
@@ -94,6 +95,12 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--disc", required=True)
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
+
+    region = sub.add_parser("regions-preview", help="Generar PNG experimentales de dos franjas TIM a partir de registros de cabecera.")
+    region.add_argument("--input", required=True)
+    region.add_argument("--output", required=True)
+    region.add_argument("--max-files", type=int, default=100)
+    region.add_argument("--max-pngs", type=int, default=25)
 
     records = sub.add_parser("records-analyze", help="Analizar registros de 12 bytes como seis u16 y contrastarlos con dimensiones TIM.")
     records.add_argument("--input", required=True)
@@ -200,6 +207,15 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "regions-preview":
+        result = preview_regions(Path(namespace.input), Path(namespace.output),
+                                 max_files=namespace.max_files,
+                                 max_pngs=namespace.max_pngs)
+        c = result["counts"]
+        print(f"Analizados: {c.get('examined', 0)}; "
+              f"previsualizaciones: {c.get('exported', 0)}; "
+              f"informe: {Path(namespace.output) / 'regions_preview.json'}")
         return
     if command == "records-analyze":
         result = analyze_records(Path(namespace.input), Path(namespace.output),
