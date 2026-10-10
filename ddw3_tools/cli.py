@@ -19,6 +19,7 @@ from .rlen_batch import extract_rlen_batch
 from .resource_inspector import inspect_extractions
 from .prefix_inspector import inspect_prefixes
 from .header_structure import inspect_header_structure
+from .record_analysis import analyze_records
 import shutil
 import subprocess
 import sys
@@ -93,6 +94,11 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--disc", required=True)
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
+
+    records = sub.add_parser("records-analyze", help="Analizar registros de 12 bytes como seis u16 y contrastarlos con dimensiones TIM.")
+    records.add_argument("--input", required=True)
+    records.add_argument("--output", required=True)
+    records.add_argument("--max-files", type=int, default=10000)
 
     structure = sub.add_parser("headers-structure", help="Verificar cabeceras 16+12*N y distribuir campos sin atribuir significado.")
     structure.add_argument("--input", required=True)
@@ -194,6 +200,14 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "records-analyze":
+        result = analyze_records(Path(namespace.input), Path(namespace.output),
+                                 max_files=namespace.max_files)
+        c = result["counts"]
+        print(f"Cabeceras: {c.get('valid_headers', 0)}; "
+              f"coincidencias con ancho TIM: {c.get('last_record_width_match', 0)}; "
+              f"informe: {namespace.output}")
         return
     if command == "headers-structure":
         result = inspect_header_structure(Path(namespace.input), Path(namespace.output),
