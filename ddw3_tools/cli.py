@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+
+from .maps import download_maps
 import shutil
 import subprocess
 import sys
@@ -67,6 +69,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ddw3", description="Extraer videos de PS1 y convertirlos para Godot.")
     sub = parser.add_subparsers(dest="command", required=True)
 
+    maps = sub.add_parser("maps-download", help="Descargar PNG y metadatos de mapas desde ddw3 (GitHub).")
+    maps.add_argument("--output", required=True, help="Carpeta destino; preserva tim/ y map-tile/.")
+    maps.add_argument("--stage", help="Un stage específico, por ejemplo s200pack; omitir para todos.")
+    maps.add_argument("--list-only", action="store_true", help="Listar sin descargar.")
+    maps.add_argument("--max-files", type=int, default=100000, help="Límite de archivos a descargar.")
+
     index = sub.add_parser("index", help="Indexar BIN/ISO con jPSXdec.")
     index.add_argument("--disc", required=True)
     index.add_argument("--jpsxdec", required=True)
@@ -96,6 +104,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def execute(namespace: argparse.Namespace) -> None:
     command = namespace.command
+    if command == "maps-download":
+        downloaded, skipped = download_maps(Path(namespace.output), stage=namespace.stage, list_only=namespace.list_only, max_files=namespace.max_files)
+        print(f"Descargados: {downloaded}; existentes omitidos: {skipped}")
+        return
     if command in {"index", "list", "extract"}:
         base = jpsxdec_command(namespace.jpsxdec)
         if command == "index":
