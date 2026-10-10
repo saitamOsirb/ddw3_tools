@@ -90,4 +90,4 @@ def test_windows_powershell_utf8_bom_recipe(tmp_path):
     output = tmp_path / "pose_A.png"
     result = compose_sprite(aligned, resources, recipe_path, output)
     assert result["size"] == [6, 1]
-    assert output.read_bytes().startswith(b"\\x89PNG")
+    assert output.read_bytes().startswith(bytes((0x89, 0x50, 0x4E, 0x47)))
