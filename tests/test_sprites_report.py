@@ -26,5 +26,8 @@ def test_build_report(tmp_path):
     destination = tmp_path / "report.json"
     report = build_report(tmp_path, destination)
     assert report["texture_count"] == 1
+    assert report["textures"][0]["image_position"] is None
+    assert report["textures"][0]["clut_position"] is None
+    assert report["textures"][0]["external_palette"] is False
     assert report["textures"][0]["palettes"][0]["content_bbox_xyxy"] == [0, 0, 1, 1]
     assert json.loads(destination.read_text()) == report
