@@ -6,7 +6,7 @@ import struct
 import zlib
 from pathlib import Path
 
-MAGIC = b"\\x10\\x00\\x00\\x00"
+MAGIC = b"\x10\x00\x00\x00"
 MODES = {0: 4, 1: 8, 2: 16, 3: 24}
 
 
@@ -103,8 +103,8 @@ def rgba(tim: dict, palette_index: int = 0) -> bytes:
 def write_png(path: Path, width: int, height: int, pixels: bytes) -> None:
     def chunk(tag: bytes, payload: bytes) -> bytes:
         return struct.pack(">I", len(payload)) + tag + payload + struct.pack(">I", zlib.crc32(tag + payload) & 0xffffffff)
-    scanlines = b"".join(b"\\x00" + pixels[y * width * 4:(y + 1) * width * 4] for y in range(height))
-    path.write_bytes(b"\\x89PNG\\r\\n\\x1a\\n" +
+    scanlines = b"".join(b"\x00" + pixels[y * width * 4:(y + 1) * width * 4] for y in range(height))
+    path.write_bytes(b"\x89PNG\r\n\x1a\n" +
                      chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)) +
                      chunk(b"IDAT", zlib.compress(scanlines)) + chunk(b"IEND", b""))
 
