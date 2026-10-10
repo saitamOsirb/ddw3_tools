@@ -72,7 +72,7 @@ def build_parser() -> argparse.ArgumentParser:
     index.add_argument("--jpsxdec", required=True)
     index.add_argument("--output", required=True)
 
-    listing = sub.add_parser("list", help="Listar contenido del índice jPSXdec.")
+    listing = sub.add_parser("list", help="Mostrar índice de jPSXdec con números e IDs de elementos.")
     listing.add_argument("--index", required=True)
     listing.add_argument("--jpsxdec", required=True)
 
@@ -106,7 +106,8 @@ def execute(namespace: argparse.Namespace) -> None:
                 raise ValueError(f"Ya existe el índice: {out}")
             run(base + ["-f", str(source), "-x", str(out)])
         elif command == "list":
-            run(base + ["-x", str(file_path(namespace.index)), "-?"])
+            index_path = file_path(namespace.index)
+            print(index_path.read_text(encoding="utf-8-sig", errors="replace"))
         else:
             index = file_path(namespace.index)
             out = Path(namespace.output).expanduser().resolve()
