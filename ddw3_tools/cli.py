@@ -5,6 +5,7 @@ import argparse
 from pathlib import Path
 
 from .maps import download_maps
+from .sprites import extract_sprites
 import shutil
 import subprocess
 import sys
@@ -75,6 +76,11 @@ def build_parser() -> argparse.ArgumentParser:
     maps.add_argument("--list-only", action="store_true", help="Listar sin descargar.")
     maps.add_argument("--max-files", type=int, default=100000, help="Límite de archivos a descargar.")
 
+    sprites = sub.add_parser("sprites-extract", help="Escanear TIM de BIN/ISO y exportar PNG y manifest.json.")
+    sprites.add_argument("--disc", required=True)
+    sprites.add_argument("--output", required=True)
+    sprites.add_argument("--max-images", type=int, default=10000)
+
     index = sub.add_parser("index", help="Indexar BIN/ISO con jPSXdec.")
     index.add_argument("--disc", required=True)
     index.add_argument("--jpsxdec", required=True)
@@ -104,6 +110,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def execute(namespace: argparse.Namespace) -> None:
     command = namespace.command
+    if command == "sprites-extract":
+        manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
+        print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
     if command == "maps-download":
         downloaded, skipped = download_maps(Path(namespace.output), stage=namespace.stage, list_only=namespace.list_only, max_files=namespace.max_files)
         print(f"Descargados: {downloaded}; existentes omitidos: {skipped}")
