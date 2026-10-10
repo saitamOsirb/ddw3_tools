@@ -77,7 +77,11 @@ def build_report(folder: Path, destination: Path | None = None) -> dict:
             palettes.append({"file": filename, **inspect_png(folder / filename)})
         images.append({"offset": item["offset"],
                        "logical_offset": item.get("logical_offset"),
-                       "bpp": item["bpp"], "palettes": palettes})
+                       "bpp": item["bpp"],
+                       "image_position": item.get("image_position"),
+                       "clut_position": item.get("clut_position"),
+                       "external_palette": item.get("external_palette", False),
+                       "palettes": palettes})
     report = {"source": manifest.get("source"),
               "disc_layout": manifest.get("disc_layout", "unknown"),
               "texture_count": len(images),
