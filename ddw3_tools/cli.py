@@ -25,6 +25,7 @@ from .region_atlas import export_region_atlas
 from .texture_catalog import catalog_textures
 from .texture_sheets import build_texture_sheets
 from .sprite_candidates import export_sprite_candidates
+from .frame_candidates import extract_candidate_frames
 import shutil
 import subprocess
 import sys
@@ -99,6 +100,15 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--disc", required=True)
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
+
+    frames = sub.add_parser("frames-candidates", help="Separar regiones opacas conectadas de atlas TIM 4bpp (experimental).")
+    frames.add_argument("--input", required=True)
+    frames.add_argument("--output", required=True)
+    frames.add_argument("--contains", help="Filtrar por parte del nombre de carpeta LBA.")
+    frames.add_argument("--max-atlases", type=int, default=2)
+    frames.add_argument("--max-regions", type=int, default=96)
+    frames.add_argument("--min-pixels", type=int, default=12)
+    frames.add_argument("--max-palettes", type=int, default=16)
 
     candidates = sub.add_parser("sprites-candidates", help="Exportar atlas candidatos 4bpp con todas sus paletas TIM originales.")
     candidates.add_argument("--input", required=True)
@@ -234,6 +244,17 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "frames-candidates":
+        result = extract_candidate_frames(
+            Path(namespace.input), Path(namespace.output),
+            contains=namespace.contains, max_atlases=namespace.max_atlases,
+            max_regions=namespace.max_regions, min_pixels=namespace.min_pixels,
+            max_palettes=namespace.max_palettes)
+        counts = result["counts"]
+        print(f"Atlas: {counts.get('atlases_exported', 0)}; "
+              f"recortes: {counts.get('regions_exported', 0)}; "
+              f"errores: {counts.get('errors', 0)}")
         return
     if command == "sprites-candidates":
         result = export_sprite_candidates(Path(namespace.input), Path(namespace.output),
