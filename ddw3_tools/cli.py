@@ -8,6 +8,8 @@ from .maps import download_maps
 from .sprites import extract_sprites
 from .sprites_report import build_report
 from .packs import extract_pack
+from .disc_files import catalog_disc
+from .disc_packs import scan_disc_packs
 import shutil
 import subprocess
 import sys
@@ -83,6 +85,17 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
 
+    catalog = sub.add_parser("disc-catalog", help="Catalogar archivos ISO9660 dentro de un BIN/ISO PS1.")
+    catalog.add_argument("--disc", required=True)
+    catalog.add_argument("--output", required=True)
+    catalog.add_argument("--max-files", type=int, default=100000)
+
+    packs = sub.add_parser("disc-packs", help="Buscar contenedores PACK candidatos en archivos del disco.")
+    packs.add_argument("--disc", required=True)
+    packs.add_argument("--output", required=True)
+    packs.add_argument("--extract", action="store_true", help="Extraer candidatos (puede ocupar mucho espacio).")
+    packs.add_argument("--max-extract", type=int, default=50)
+
     pack = sub.add_parser("pack-extract", help="Extraer entradas de un contenedor PACK DW3 y previsualizar TIM completos.")
     pack.add_argument("--input", required=True, help="Archivo PACK/BIN individual, no la imagen completa del disco.")
     pack.add_argument("--output", required=True, help="Carpeta para entradas y manifiesto.")
@@ -124,6 +137,17 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "disc-catalog":
+        result = catalog_disc(file_path(namespace.disc), Path(namespace.output),
+                              max_files=namespace.max_files)
+        print(f"Archivos ISO9660: {result['file_count']}; catalogo: {namespace.output}")
+        return
+    if command == "disc-packs":
+        result = scan_disc_packs(file_path(namespace.disc), Path(namespace.output),
+                                 extract=namespace.extract, max_extract=namespace.max_extract)
+        print(f"Archivos revisados: {result['files_checked']}; "
+              f"PACK candidatos: {result['pack_candidates']}")
         return
     if command == "pack-extract":
         result = extract_pack(file_path(namespace.input), Path(namespace.output),
