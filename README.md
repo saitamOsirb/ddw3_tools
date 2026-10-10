@@ -91,8 +91,21 @@ py -m ddw3_tools maps-download --output "D:\\developer\\ddw3_maps"
 
 El comando preserva las rutas del repositorio y omite archivos ya descargados. Utiliza la API pública de GitHub, por lo que puede alcanzar límites de solicitudes en descargas grandes. **No reconstruye todavía los mapas jugables de Godot**: descarga las texturas y los manifiestos necesarios para el próximo paso de composición de capas y atlas. Tampoco descarga la ISO original.
 
+
+## Extracción experimental de imágenes TIM (sprites y texturas)
+
+La herramienta ahora puede escanear bytes de una imagen BIN/ISO buscando estructuras **TIM estándar de PlayStation 1** y exportar sus imágenes como PNG RGBA. No necesita jPSXdec ni FFmpeg para este comando:
+
+```powershell
+py -m ddw3_tools sprites-extract --disc "D:\\DigimonExtract\\original\\Digimon World 3.bin" --output "D:\\DigimonExtract\\sprites"
+```
+
+También admite `--max-images 10000` (límite de estructuras TIM). Crea archivos `tim_<offset>_pal_<n>.png` y `manifest.json` con offsets, dimensiones, profundidad de color, paletas y archivos generados. Soporta TIM de 4, 8, 16 y 24 bits; para 4/8 bits exporta las variantes CLUT. En paletas indexadas el color negro cero se trata como transparente; la interpretación de transparencia PS1/STP puede requerir ajustes manuales.
+
+**Limitaciones:** es un escáner de TIM estándar, no un extractor completo de sprites animados. Puede detectar texturas, fondos e interfaces, no solo personajes; no recompone animaciones ni decodifica contenedores comprimidos o formatos propietarios. Procesa la imagen completa en memoria, por lo que requiere RAM suficiente. Los resultados dependen de la versión/región y organización de la imagen.
+
 ## Alcance siguiente
 
-- Identificación y conversión de sprites TIM y paletas.
+- Identificación de sprites TIM empaquetados/comprimidos y reconstrucción de animaciones.
 - Extracción de MAP y composición de capas/tiles.
 - Manifiestos para Godot (PNG/atlas/navegación).
