@@ -19,6 +19,7 @@ from .rlen_neighborhood import inspect_rlen_neighborhood
 from .neighbor_comparison import compare_neighbor_atlases
 from .related_atlases import compare_related_atlases
 from .verify_matches import verify_atlas_matches
+from .verified_crops import export_verified_crops
 from .rlen_batch import extract_rlen_batch
 from .resource_inspector import inspect_extractions
 from .prefix_inspector import inspect_prefixes
@@ -200,6 +201,12 @@ def build_parser() -> argparse.ArgumentParser:
     batch.add_argument("--survey", required=True)
     batch.add_argument("--output", required=True)
     batch.add_argument("--max-blocks", type=int, default=100)
+
+    crops = sub.add_parser("atlases-export-verified", help="Exportar figuras verificadas desde el TIM grande sin superposicion.")
+    crops.add_argument("--input", required=True)
+    crops.add_argument("--verified", required=True)
+    crops.add_argument("--output", required=True)
+    crops.add_argument("--palette", type=int, default=0)
 
     verify = sub.add_parser("atlases-verify", help="Verificar correspondencias entre indices 4bpp y todas las paletas CLUT.")
     verify.add_argument("--input", required=True)
@@ -428,6 +435,13 @@ def execute(namespace: argparse.Namespace) -> None:
                                     max_blocks=namespace.max_blocks)
         print(f"RLEN intentados: {result['attempted']}; "
               f"correctos: {result['successful']}; PNG: {result['png_count']}")
+        return
+    if command == "atlases-export-verified":
+        result = export_verified_crops(Path(namespace.input),
+                                       Path(namespace.verified), Path(namespace.output),
+                                       palette=namespace.palette)
+        print(f"Recortes originales: {len(result['entries'])}; "
+              f"informe: {Path(namespace.output) / 'verified_crops.json'}")
         return
     if command == "atlases-verify":
         result = verify_atlas_matches(
