@@ -15,6 +15,7 @@ from .embedded_packs import scan_embedded_packs
 from .disc_layout import analyze_layout
 from .disc_survey import survey_regions
 from .rlen_extract import extract_rlen_at
+from .rlen_neighborhood import inspect_rlen_neighborhood
 from .rlen_batch import extract_rlen_batch
 from .resource_inspector import inspect_extractions
 from .prefix_inspector import inspect_prefixes
@@ -196,6 +197,13 @@ def build_parser() -> argparse.ArgumentParser:
     batch.add_argument("--survey", required=True)
     batch.add_argument("--output", required=True)
     batch.add_argument("--max-blocks", type=int, default=100)
+
+    nearby = sub.add_parser("rlen-neighborhood", help="Inspeccion de bytes y firmas RLEN cerca de un recurso, sin inferir animaciones.")
+    nearby.add_argument("--disc", required=True)
+    nearby.add_argument("--lba", required=True, type=int)
+    nearby.add_argument("--offset", required=True, type=int)
+    nearby.add_argument("--radius", type=int, default=8)
+    nearby.add_argument("--output", required=True)
 
     rlen = sub.add_parser("rlen-extract", help="Descomprimir un bloque RLEN por LBA y offset.")
     rlen.add_argument("--disc", required=True)
@@ -401,6 +409,13 @@ def execute(namespace: argparse.Namespace) -> None:
                                     max_blocks=namespace.max_blocks)
         print(f"RLEN intentados: {result['attempted']}; "
               f"correctos: {result['successful']}; PNG: {result['png_count']}")
+        return
+    if command == "rlen-neighborhood":
+        result = inspect_rlen_neighborhood(
+            file_path(namespace.disc), Path(namespace.output),
+            lba=namespace.lba, offset=namespace.offset, radius=namespace.radius)
+        print(f"Sectores: {len(result['sectors'])}; firmas RLEN: {len(result['signatures'])}; "
+              f"informe: {namespace.output}")
         return
     if command == "rlen-extract":
         result = extract_rlen_at(file_path(namespace.disc), Path(namespace.output),
