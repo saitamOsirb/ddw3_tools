@@ -96,6 +96,7 @@ def verify_atlas_matches(source: Path, aligned_dir: Path, matches_path: Path,
                             "small_palette": si, "large_palette": bi,
                             "visible_pixels": visible, "same_visible_rgba_pixels": matched,
                             "exact_visible_rgba": matched == visible,
+                            "usable_for_sprite": visible < w * h * .98,
                         })
                 findings.append({
                     "group_id": gid, "small_palette_of_original_match": sp,
@@ -105,10 +106,9 @@ def verify_atlas_matches(source: Path, aligned_dir: Path, matches_path: Path,
                     "exact_indexed_pixels": same_index == index_total,
                     "palette_pairings_with_matching_alpha": variants,
                     "best_visible_rgba_pairing": (
-                        max(variants, key=lambda v: (
+                        max((v for v in variants if v["usable_for_sprite"]), key=lambda v: (
                             v["same_visible_rgba_pixels"] / v["visible_pixels"],
-                            v["same_visible_rgba_pixels"]))
-                        if variants else None),
+                            v["same_visible_rgba_pixels"]), default=None)),
                 })
     report = {
         "large": large, "small": small, "findings": findings,
