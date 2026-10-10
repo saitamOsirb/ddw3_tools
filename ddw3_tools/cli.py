@@ -26,6 +26,7 @@ from .texture_catalog import catalog_textures
 from .texture_sheets import build_texture_sheets
 from .sprite_candidates import export_sprite_candidates
 from .frame_candidates import extract_candidate_frames
+from .frame_grouping import export_grouped_candidates
 import shutil
 import subprocess
 import sys
@@ -100,6 +101,15 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--disc", required=True)
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
+
+    grouped = sub.add_parser("frames-group", help="Agrupar regiones cercanas de un atlas TIM 4bpp, de forma experimental.")
+    grouped.add_argument("--input", required=True)
+    grouped.add_argument("--output", required=True)
+    grouped.add_argument("--contains", required=True, help="Identificador LBA que seleccione un unico atlas.")
+    grouped.add_argument("--gap", type=int, default=3)
+    grouped.add_argument("--max-width", type=int, default=64)
+    grouped.add_argument("--max-height", type=int, default=64)
+    grouped.add_argument("--min-pixels", type=int, default=12)
 
     frames = sub.add_parser("frames-candidates", help="Separar regiones opacas conectadas de atlas TIM 4bpp (experimental).")
     frames.add_argument("--input", required=True)
@@ -244,6 +254,17 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "frames-group":
+        result = export_grouped_candidates(
+            Path(namespace.input), Path(namespace.output),
+            contains=namespace.contains, gap=namespace.gap,
+            max_width=namespace.max_width, max_height=namespace.max_height,
+            min_pixels=namespace.min_pixels)
+        c = result["counts"]
+        print(f"Componentes: {c.get('components', 0)}; "
+              f"grupos candidatos: {c.get('groups', 0)}; "
+              f"informe: {Path(namespace.output) / 'grouped_candidates.json'}")
         return
     if command == "frames-candidates":
         result = extract_candidate_frames(
