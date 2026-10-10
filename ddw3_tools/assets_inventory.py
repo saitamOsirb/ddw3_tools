@@ -5,7 +5,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from .sprites import MAGIC, parse_tim
+from .sprites import MAGIC, parse_tim, rgba, write_png
 
 
 def classify_member(data: bytes, *, max_tim: int = 100) -> dict:
@@ -39,7 +39,8 @@ def classify_member(data: bytes, *, max_tim: int = 100) -> dict:
 
 
 def inventory_packs(folder: Path, output: Path, *,
-                    max_member_bytes: int = 32 * 1024 * 1024) -> dict:
+                    max_member_bytes: int = 32 * 1024 * 1024,
+                    export_tim: bool = False) -> dict:
     """Inspect outputs from pack-extract or disc-packs --extract."""
     manifests = sorted(folder.rglob("pack_manifest.json"))
     entries = []
@@ -57,12 +58,32 @@ def inventory_packs(folder: Path, output: Path, *,
                                 "classification": "too_large",
                                 "bytes": path.stat().st_size})
                 continue
-            info = classify_member(path.read_bytes())
+            data = path.read_bytes()
+            info = classify_member(data)
+            if export_tim and info["tim"]:
+                previews = []
+                for i, item in enumerate(info["tim"]):
+                    tim = parse_tim(data, item["offset"])
+                    if tim is None:
+                        continue
+                    for palette in range(max(1, len(tim["palettes"]))):
+                        name = f"{path.stem}_tim_{i:03d}_pal_{palette:03d}.png"
+                        target = path.parent / "tim_previews" / name
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        write_png(target, tim["width"], tim["height"], rgba(tim, palette))
+                        previews.append({
+                            "tim_index": i, "palette": palette,
+                            "file": str(target.relative_to(folder)),
+                        })
+                info["previews"] = previews
             entries.append({"path": str(path.relative_to(folder)), **info})
     counts = dict(Counter(x["classification"] for x in entries))
     result = {
         "root": str(folder), "pack_manifests": len(manifests),
         "members": len(entries), "classifications": counts,
+        "export_tim": export_tim,
+        "tim_structures": sum(x.get("tim_count", 0) for x in entries),
+        "png_previews": sum(len(x.get("previews", [])) for x in entries),
         "entries": entries,
         "note": "TIM identification does not establish character identity or animation frames.",
     }
