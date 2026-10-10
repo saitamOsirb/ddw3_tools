@@ -23,6 +23,7 @@ from .record_analysis import analyze_records
 from .region_preview import preview_regions
 from .region_atlas import export_region_atlas
 from .texture_catalog import catalog_textures
+from .texture_sheets import build_texture_sheets
 import shutil
 import subprocess
 import sys
@@ -97,6 +98,12 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--disc", required=True)
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
+
+    sheets = sub.add_parser("textures-sheets", help="Crear laminas comparativas de texturas TIM por categoria.")
+    sheets.add_argument("--input", required=True)
+    sheets.add_argument("--output", required=True)
+    sheets.add_argument("--max-files", type=int, default=10000)
+    sheets.add_argument("--per-group", type=int, default=24)
 
     textures = sub.add_parser("textures-catalog", help="Clasificar texturas TIM por tamaño, bpp y cabecera, sin atribuir identidad.")
     textures.add_argument("--input", required=True)
@@ -220,6 +227,14 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "textures-sheets":
+        result = build_texture_sheets(Path(namespace.input), Path(namespace.output),
+                                      max_files=namespace.max_files,
+                                      per_group=namespace.per_group)
+        print(f"Laminas: {len(result['sheets'])}; "
+              f"muestras: {sum(s['sampled'] for s in result['sheets'])}; "
+              f"errores: {result['errors']}")
         return
     if command == "textures-catalog":
         result = catalog_textures(Path(namespace.input), Path(namespace.output),
