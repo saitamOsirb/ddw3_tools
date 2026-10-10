@@ -11,6 +11,7 @@ from .packs import extract_pack
 from .disc_files import catalog_disc
 from .disc_packs import scan_disc_packs
 from .assets_inventory import inventory_packs
+from .embedded_packs import scan_embedded_packs
 import shutil
 import subprocess
 import sys
@@ -86,6 +87,12 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
 
+    embedded = sub.add_parser("disc-scan-embedded", help="Buscar cabeceras PACK alineadas a sectores dentro de archivos grandes.")
+    embedded.add_argument("--disc", required=True)
+    embedded.add_argument("--output", required=True)
+    embedded.add_argument("--max-sectors", type=int, default=400000)
+    embedded.add_argument("--max-hits", type=int, default=1000)
+
     inventory = sub.add_parser("assets-inventory", help="Inventariar entradas PACK y TIM internos.")
     inventory.add_argument("--input", required=True, help="Carpeta de pack-extract o disc-packs --extract.")
     inventory.add_argument("--output", required=True, help="Ruta del JSON de inventario.")
@@ -143,6 +150,14 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "disc-scan-embedded":
+        result = scan_embedded_packs(file_path(namespace.disc), Path(namespace.output),
+                                     max_sectors=namespace.max_sectors,
+                                     max_hits=namespace.max_hits)
+        print(f"Sectores revisados: {result['sectors_checked']}; "
+              f"PACK internos candidatos: {result['candidates']}; "
+              f"busqueda truncada: {result['truncated']}")
         return
     if command == "assets-inventory":
         result = inventory_packs(Path(namespace.input), Path(namespace.output),
