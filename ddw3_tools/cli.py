@@ -22,6 +22,7 @@ from .header_structure import inspect_header_structure
 from .record_analysis import analyze_records
 from .region_preview import preview_regions
 from .region_atlas import export_region_atlas
+from .texture_catalog import catalog_textures
 import shutil
 import subprocess
 import sys
@@ -96,6 +97,11 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--disc", required=True)
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
+
+    textures = sub.add_parser("textures-catalog", help="Clasificar texturas TIM por tamaño, bpp y cabecera, sin atribuir identidad.")
+    textures.add_argument("--input", required=True)
+    textures.add_argument("--output", required=True)
+    textures.add_argument("--max-files", type=int, default=10000)
 
     atlas = sub.add_parser("regions-atlas", help="Exportar TIM original y recortes de regiones sin alterar sus pixeles.")
     atlas.add_argument("--input", required=True)
@@ -214,6 +220,12 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "textures-catalog":
+        result = catalog_textures(Path(namespace.input), Path(namespace.output),
+                                  max_files=namespace.max_files)
+        print(f"Texturas: {len(result['textures'])}; "
+              f"grupos: {len(result['counts'])}; informe: {namespace.output}")
         return
     if command == "regions-atlas":
         result = export_region_atlas(Path(namespace.input), Path(namespace.output),
