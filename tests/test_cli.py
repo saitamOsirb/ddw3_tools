@@ -1,14 +1,12 @@
-from argparse import Namespace
-from pathlib import Path
 from unittest.mock import patch
 
-from ddw3_tools.cli import build_parser, convert, execute, main
+from ddw3_tools.cli import build_parser, convert, main
 
 
 def test_parser_has_video_subcommands():
     parser = build_parser()
     for name in ("index", "list", "extract", "convert", "convert-dir"):
-        assert parser.parse_args([name, "--help"]) if False else name in parser.format_help() or True
+        assert name in parser.format_help()
 
 
 def test_missing_input_returns_nonzero(tmp_path):
