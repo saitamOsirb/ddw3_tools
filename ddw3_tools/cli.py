@@ -15,6 +15,7 @@ from .embedded_packs import scan_embedded_packs
 from .disc_layout import analyze_layout
 from .disc_survey import survey_regions
 from .rlen_extract import extract_rlen_at
+from .rlen_batch import extract_rlen_batch
 import shutil
 import subprocess
 import sys
@@ -89,6 +90,12 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--disc", required=True)
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
+
+    batch = sub.add_parser("rlen-batch", help="Extraer en lote firmas RLEN de un informe disc-survey.")
+    batch.add_argument("--disc", required=True)
+    batch.add_argument("--survey", required=True)
+    batch.add_argument("--output", required=True)
+    batch.add_argument("--max-blocks", type=int, default=100)
 
     rlen = sub.add_parser("rlen-extract", help="Descomprimir un bloque RLEN por LBA y offset.")
     rlen.add_argument("--disc", required=True)
@@ -169,6 +176,14 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "rlen-batch":
+        result = extract_rlen_batch(file_path(namespace.disc),
+                                    file_path(namespace.survey),
+                                    Path(namespace.output),
+                                    max_blocks=namespace.max_blocks)
+        print(f"RLEN intentados: {result['attempted']}; "
+              f"correctos: {result['successful']}; PNG: {result['png_count']}")
         return
     if command == "rlen-extract":
         result = extract_rlen_at(file_path(namespace.disc), Path(namespace.output),
