@@ -79,3 +79,15 @@ def test_source_over_opaque_and_transparent():
     assert bytes(canvas) == bytes((0, 0, 255, 255))
     _over(canvas, 0, bytes((255, 0, 0, 255)), 0)
     assert bytes(canvas) == bytes((255, 0, 0, 255))
+
+
+def test_windows_powershell_utf8_bom_recipe(tmp_path):
+    resources, aligned = _prepare(tmp_path)
+    recipe_path = tmp_path / "pose_A.json"
+    recipe = make_composition_recipe(aligned, recipe_path)
+    # Windows PowerShell 5.1 Set-Content -Encoding UTF8 writes a UTF-8 BOM.
+    recipe_path.write_text(json.dumps(recipe), encoding="utf-8-sig")
+    output = tmp_path / "pose_A.png"
+    result = compose_sprite(aligned, resources, recipe_path, output)
+    assert result["size"] == [6, 1]
+    assert output.read_bytes().startswith(b"\\x89PNG")
