@@ -106,13 +106,13 @@ def execute(namespace: argparse.Namespace) -> None:
                 raise ValueError(f"Ya existe el índice: {out}")
             run(base + ["-f", str(source), "-x", str(out)])
         elif command == "list":
-            run(base + ["-x", str(file_path(namespace.index)), "-l"])
+            run(base + ["-x", str(file_path(namespace.index)), "-?"])
         else:
             index = file_path(namespace.index)
             out = Path(namespace.output).expanduser().resolve()
             out.mkdir(parents=True, exist_ok=True)
             # Use absolute destination prefix, to avoid writing beside the input disc.
-            run(base + ["-x", str(index), "-i", namespace.item, "-v", "-dir", str(out)])
+            run(base + ["-x", str(index), "-i", namespace.item, "-dir", str(out), "-quality", "high", "-vf", "avi:rgb"])
         return
     if command == "convert":
         convert(file_path(namespace.input), Path(namespace.output).expanduser().resolve(), overwrite=namespace.overwrite)
