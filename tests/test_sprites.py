@@ -26,7 +26,7 @@ def test_tim_16bit(tmp_path):
 
 def test_tim_4bit_two_palettes():
     palette = [0, 31] + [0] * 14 + [0, 31744] + [0] * 14
-    image = MAGIC + struct.pack("<I", 8) + block(16, 2, struct.pack("<32H", *palette)) + block(1, 1, bytes((0x10, 0, 0, 0)))
+    image = MAGIC + struct.pack("<I", 8) + block(16, 2, struct.pack("<32H", *palette)) + block(1, 1, bytes((0x10, 0)))
     tim = parse_tim(image, 0)
     assert tim["width"] == 4 and len(tim["palettes"]) == 2
     assert rgba(tim, 0)[4:8] == bytes((255, 0, 0, 255))
