@@ -13,6 +13,7 @@ from .disc_packs import scan_disc_packs
 from .assets_inventory import inventory_packs
 from .embedded_packs import scan_embedded_packs
 from .disc_layout import analyze_layout
+from .disc_survey import survey_regions
 import shutil
 import subprocess
 import sys
@@ -88,6 +89,12 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
 
+    survey = sub.add_parser("disc-survey", help="Inspeccionar regiones no catalogadas y localizar firmas RLEN.")
+    survey.add_argument("--disc", required=True)
+    survey.add_argument("--output", required=True)
+    survey.add_argument("--stride", type=int, default=1, help="Leer un sector de cada N.")
+    survey.add_argument("--max-hits", type=int, default=200)
+
     layout = sub.add_parser("disc-layout", help="Medir regiones físicas no catalogadas por ISO9660.")
     layout.add_argument("--disc", required=True)
     layout.add_argument("--output", required=True)
@@ -155,6 +162,12 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "disc-survey":
+        result = survey_regions(file_path(namespace.disc), Path(namespace.output),
+                                max_hits=namespace.max_hits, stride=namespace.stride)
+        print(f"Firmas RLEN: {result['rlen_total']}; "
+              f"regiones inspeccionadas: {len(result['regions'])}")
         return
     if command == "disc-layout":
         result = analyze_layout(file_path(namespace.disc), Path(namespace.output))
