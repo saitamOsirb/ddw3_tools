@@ -18,6 +18,7 @@ from .rlen_extract import extract_rlen_at
 from .rlen_neighborhood import inspect_rlen_neighborhood
 from .neighbor_comparison import compare_neighbor_atlases
 from .related_atlases import compare_related_atlases
+from .verify_matches import verify_atlas_matches
 from .rlen_batch import extract_rlen_batch
 from .resource_inspector import inspect_extractions
 from .prefix_inspector import inspect_prefixes
@@ -199,6 +200,12 @@ def build_parser() -> argparse.ArgumentParser:
     batch.add_argument("--survey", required=True)
     batch.add_argument("--output", required=True)
     batch.add_argument("--max-blocks", type=int, default=100)
+
+    verify = sub.add_parser("atlases-verify", help="Verificar correspondencias entre indices 4bpp y todas las paletas CLUT.")
+    verify.add_argument("--input", required=True)
+    verify.add_argument("--aligned", required=True)
+    verify.add_argument("--matches", required=True)
+    verify.add_argument("--output", required=True)
 
     related = sub.add_parser("atlases-related", help="Buscar coincidencias exactas entre atlas 24233 y grupos 24241.")
     related.add_argument("--input", required=True)
@@ -421,6 +428,13 @@ def execute(namespace: argparse.Namespace) -> None:
                                     max_blocks=namespace.max_blocks)
         print(f"RLEN intentados: {result['attempted']}; "
               f"correctos: {result['successful']}; PNG: {result['png_count']}")
+        return
+    if command == "atlases-verify":
+        result = verify_atlas_matches(
+            Path(namespace.input), Path(namespace.aligned),
+            Path(namespace.matches), Path(namespace.output))
+        print(f"Coincidencias verificadas: {len(result['findings'])}; "
+              f"informe: {Path(namespace.output) / 'verified_matches.json'}")
         return
     if command == "atlases-related":
         result = compare_related_atlases(
