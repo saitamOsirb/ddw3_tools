@@ -29,7 +29,7 @@ def unpack(data: bytes, *, max_entries: int = 65536) -> list[dict]:
         if start == 0:
             entries.append({"index": i, "offset": None, "size": 0, "data": b""})
             continue
-        if start < first or start > len(data):
+        if start < first or start >= len(data):
             raise ValueError(f"Offset fuera del contenedor en entrada {i}")
         # Mirrors dmw3_pack: an entry extends to the next greater offset.
         end = next((x for x in offsets[i + 1:] if x > start), len(data))
