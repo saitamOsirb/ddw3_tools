@@ -10,6 +10,7 @@ from .sprites_report import build_report
 from .packs import extract_pack
 from .disc_files import catalog_disc
 from .disc_packs import scan_disc_packs
+from .assets_inventory import inventory_packs
 import shutil
 import subprocess
 import sys
@@ -85,6 +86,10 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
 
+    inventory = sub.add_parser("assets-inventory", help="Inventariar entradas PACK y TIM internos.")
+    inventory.add_argument("--input", required=True, help="Carpeta de pack-extract o disc-packs --extract.")
+    inventory.add_argument("--output", required=True, help="Ruta del JSON de inventario.")
+
     catalog = sub.add_parser("disc-catalog", help="Catalogar archivos ISO9660 dentro de un BIN/ISO PS1.")
     catalog.add_argument("--disc", required=True)
     catalog.add_argument("--output", required=True)
@@ -137,6 +142,11 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "assets-inventory":
+        result = inventory_packs(Path(namespace.input), Path(namespace.output))
+        print(f"Contenedores: {result['pack_manifests']}; recursos: {result['members']}; "
+              f"tipos: {result['classifications']}")
         return
     if command == "disc-catalog":
         result = catalog_disc(file_path(namespace.disc), Path(namespace.output),
