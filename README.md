@@ -2,6 +2,12 @@
 
 Herramientas Python para preparar recursos de Digimon World 3 / Digimon World 2003 para motores actuales. **Primera entrega: extracción de videos desde imágenes de disco PS1 y conversión a OGV (Godot 4).**
 
+## Documentación de extracción de ISO
+
+La guía completa, con organización de carpetas, comandos de PowerShell, diagnóstico de errores y alcance real de cada herramienta, está en **[docs/iso/README.md](docs/iso/README.md)**.
+
+Comandos implementados: `index`, `list`, `extract`, `convert`, `convert-dir` y `maps-download`. La extracción directa de TIM y la composición de mapas jugables todavía están pendientes.
+
 ## Requisitos (Windows)
 
 - Python 3.11+
@@ -39,7 +45,7 @@ py -m ddw3_tools list --index "D:\Extraccion\disco.idx" --jpsxdec "D:\Herramient
 py -m ddw3_tools extract --index "D:\Extraccion\disco.idx" --jpsxdec "D:\Herramientas\jPSXdec\jpsxdec.jar" --item "ID_DEL_VIDEO" --output "D:\Extraccion\videos"
 ```
 
-jPSXdec puede producir AVI y WAV u otros formatos; identifica los archivos efectivamente exportados antes de convertir. Para clips que requieran parámetros especiales, usa `--extra` para pasar opciones adicionales a jPSXdec, o consulta la ayuda del ejecutable.
+jPSXdec puede producir AVI y WAV u otros formatos; identifica los archivos efectivamente exportados antes de convertir. Para clips que requieran parámetros especiales, consulta la ayuda de jPSXdec y ejecútalo directamente: esta versión del CLI no expone una opción `--extra`.
 
 **Paso 4: convertir a video OGV compatible con Godot**
 
