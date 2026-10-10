@@ -24,6 +24,7 @@ from .region_preview import preview_regions
 from .region_atlas import export_region_atlas
 from .texture_catalog import catalog_textures
 from .texture_sheets import build_texture_sheets
+from .sprite_candidates import export_sprite_candidates
 import shutil
 import subprocess
 import sys
@@ -98,6 +99,12 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--disc", required=True)
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
+
+    candidates = sub.add_parser("sprites-candidates", help="Exportar atlas candidatos 4bpp con todas sus paletas TIM originales.")
+    candidates.add_argument("--input", required=True)
+    candidates.add_argument("--output", required=True)
+    candidates.add_argument("--max-files", type=int, default=10000)
+    candidates.add_argument("--max-candidates", type=int, default=250)
 
     sheets = sub.add_parser("textures-sheets", help="Crear laminas comparativas de texturas TIM por categoria.")
     sheets.add_argument("--input", required=True)
@@ -227,6 +234,14 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "sprites-candidates":
+        result = export_sprite_candidates(Path(namespace.input), Path(namespace.output),
+                                          max_files=namespace.max_files,
+                                          max_candidates=namespace.max_candidates)
+        print(f"Atlas candidatos: {result['candidate_count']}; "
+              f"archivos revisados: {result['counts'].get('scanned', 0)}; "
+              f"informe: {Path(namespace.output) / 'sprite_candidates.json'}")
         return
     if command == "textures-sheets":
         result = build_texture_sheets(Path(namespace.input), Path(namespace.output),
