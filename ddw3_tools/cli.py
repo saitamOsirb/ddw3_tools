@@ -17,6 +17,7 @@ from .disc_survey import survey_regions
 from .rlen_extract import extract_rlen_at
 from .rlen_batch import extract_rlen_batch
 from .resource_inspector import inspect_extractions
+from .prefix_inspector import inspect_prefixes
 import shutil
 import subprocess
 import sys
@@ -91,6 +92,11 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--disc", required=True)
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
+
+    headers = sub.add_parser("headers-inspect", help="Agrupar cabeceras desconocidas anteriores a las texturas TIM.")
+    headers.add_argument("--input", required=True, help="Carpeta rlen_full con decoded.bin.")
+    headers.add_argument("--output", required=True, help="Informe JSON con familias de cabeceras.")
+    headers.add_argument("--max-files", type=int, default=10000)
 
     inspect = sub.add_parser("resources-inspect", help="Inventariar TIM, CLUT, VRAM y bytes desconocidos en datos RLEN ya extraidos.")
     inspect.add_argument("--input", required=True, help="Carpeta rlen_batch/rlen_full o decoded.bin individual.")
@@ -182,6 +188,13 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "headers-inspect":
+        result = inspect_prefixes(Path(namespace.input), Path(namespace.output),
+                                  max_files=namespace.max_files)
+        print(f"Binarios: {result['files_scanned']}; "
+              f"sin prefijo: {result['files_without_prefix']}; "
+              f"familias: {len(result['families'])}; informe: {namespace.output}")
         return
     if command == "resources-inspect":
         result = inspect_extractions(Path(namespace.input), Path(namespace.output),
