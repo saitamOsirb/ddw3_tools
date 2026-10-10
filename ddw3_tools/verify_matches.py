@@ -89,6 +89,9 @@ def verify_atlas_matches(source: Path, aligned_dir: Path, matches_path: Path,
                                 if sa[ai + 3]:
                                     visible += 1
                                     matched += sa[ai:ai + 4] == ba[bj:bj + 4]
+                        # An empty shared mask is not evidence of a matching sprite.
+                        if visible == 0:
+                            continue
                         variants.append({
                             "small_palette": si, "large_palette": bi,
                             "visible_pixels": visible, "same_visible_rgba_pixels": matched,
@@ -101,9 +104,21 @@ def verify_atlas_matches(source: Path, aligned_dir: Path, matches_path: Path,
                     "indexed_pixels_total": index_total,
                     "exact_indexed_pixels": same_index == index_total,
                     "palette_pairings_with_matching_alpha": variants,
+                    "best_visible_rgba_pairing": (
+                        max(variants, key=lambda v: (
+                            v["same_visible_rgba_pixels"] / v["visible_pixels"],
+                            v["same_visible_rgba_pixels"]))
+                        if variants else None),
                 })
     report = {
         "large": large, "small": small, "findings": findings,
+        "summary": {
+            "verified_locations": len(findings),
+            "exact_indexed": sum(f["exact_indexed_pixels"] for f in findings),
+            "exact_visible_rgba": sum(
+                any(v["exact_visible_rgba"] for v in f["palette_pairings_with_matching_alpha"])
+                for f in findings),
+        },
         "warning": ("Checks only previously established exact-mask translations. "
                     "Palette differences and matching indices do not prove animation timing."),
     }
