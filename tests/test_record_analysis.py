@@ -3,7 +3,7 @@ import struct
 from ddw3_tools.record_analysis import analyze_records
 
 
-def make_tim(width_words=64, height=128):
+def make_tim(width_words=128, height=128):
     pixels = bytes(width_words * height * 2)
     return (b"\x10\x00\x00\x00" + struct.pack("<I", 2)
             + struct.pack("<IHHHH", 12 + len(pixels), 0, 0, width_words, height)
