@@ -14,6 +14,7 @@ from .assets_inventory import inventory_packs
 from .embedded_packs import scan_embedded_packs
 from .disc_layout import analyze_layout
 from .disc_survey import survey_regions
+from .rlen_extract import extract_rlen_at
 import shutil
 import subprocess
 import sys
@@ -89,6 +90,12 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
 
+    rlen = sub.add_parser("rlen-extract", help="Descomprimir un bloque RLEN por LBA y offset.")
+    rlen.add_argument("--disc", required=True)
+    rlen.add_argument("--lba", required=True, type=int)
+    rlen.add_argument("--offset", required=True, type=int)
+    rlen.add_argument("--output", required=True)
+
     survey = sub.add_parser("disc-survey", help="Inspeccionar regiones no catalogadas y localizar firmas RLEN.")
     survey.add_argument("--disc", required=True)
     survey.add_argument("--output", required=True)
@@ -162,6 +169,12 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "rlen-extract":
+        result = extract_rlen_at(file_path(namespace.disc), Path(namespace.output),
+                                 lba=namespace.lba, offset=namespace.offset)
+        print(f"RLEN descomprimido: {result['decompressed_bytes']} bytes; "
+              f"PNG: {len(result['previews'])}")
         return
     if command == "disc-survey":
         result = survey_regions(file_path(namespace.disc), Path(namespace.output),
