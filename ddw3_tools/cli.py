@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .maps import download_maps
 from .sprites import extract_sprites
+from .sprites_report import build_report
 import shutil
 import subprocess
 import sys
@@ -81,6 +82,10 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
 
+    report = sub.add_parser("sprites-report", help="Diagnosticar contenido y transparencias de TIM exportados.")
+    report.add_argument("--input", required=True, help="Carpeta con manifest.json y PNG.")
+    report.add_argument("--output", required=True, help="Ruta del informe JSON.")
+
     index = sub.add_parser("index", help="Indexar BIN/ISO con jPSXdec.")
     index.add_argument("--disc", required=True)
     index.add_argument("--jpsxdec", required=True)
@@ -113,6 +118,10 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "sprites-report":
+        report = build_report(Path(namespace.input), Path(namespace.output))
+        print(f"Texturas analizadas: {report['texture_count']}; informe: {namespace.output}")
         return
     if command == "maps-download":
         downloaded, skipped = download_maps(Path(namespace.output), stage=namespace.stage, list_only=namespace.list_only, max_files=namespace.max_files)
