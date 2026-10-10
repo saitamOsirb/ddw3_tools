@@ -27,6 +27,7 @@ from .texture_sheets import build_texture_sheets
 from .sprite_candidates import export_sprite_candidates
 from .frame_candidates import extract_candidate_frames
 from .frame_grouping import export_grouped_candidates
+from .aligned_candidates import export_aligned_candidates
 import shutil
 import subprocess
 import sys
@@ -101,6 +102,15 @@ def build_parser() -> argparse.ArgumentParser:
     sprites.add_argument("--disc", required=True)
     sprites.add_argument("--output", required=True)
     sprites.add_argument("--max-images", type=int, default=10000)
+
+    aligned = sub.add_parser("frames-align", help="Exportar recortes con coordenadas compartidas entre paletas CLUT.")
+    aligned.add_argument("--input", required=True)
+    aligned.add_argument("--output", required=True)
+    aligned.add_argument("--contains", required=True)
+    aligned.add_argument("--gap", type=int, default=3)
+    aligned.add_argument("--max-width", type=int, default=64)
+    aligned.add_argument("--max-height", type=int, default=64)
+    aligned.add_argument("--min-pixels", type=int, default=12)
 
     grouped = sub.add_parser("frames-group", help="Agrupar regiones cercanas de un atlas TIM 4bpp, de forma experimental.")
     grouped.add_argument("--input", required=True)
@@ -254,6 +264,16 @@ def execute(namespace: argparse.Namespace) -> None:
     if command == "sprites-extract":
         manifest = extract_sprites(file_path(namespace.disc), Path(namespace.output), max_images=namespace.max_images)
         print(f"TIM encontrados: {manifest['tim_count']}; PNG exportados: {manifest['png_count']}")
+        return
+    if command == "frames-align":
+        result = export_aligned_candidates(
+            Path(namespace.input), Path(namespace.output),
+            contains=namespace.contains, gap=namespace.gap,
+            max_width=namespace.max_width, max_height=namespace.max_height,
+            min_pixels=namespace.min_pixels)
+        print(f"Grupos alineados: {result['aligned_group_count']}; "
+              f"paletas utilizables: {sum(p['status'] == 'partial' for p in result['palettes'])}; "
+              f"informe: {Path(namespace.output) / 'aligned_candidates.json'}")
         return
     if command == "frames-group":
         result = export_grouped_candidates(
