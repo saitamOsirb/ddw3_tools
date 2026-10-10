@@ -45,6 +45,7 @@ def test_verifies_indices_and_all_palette_pairings(tmp_path):
     assert all(x["exact_visible_rgba"] and x["visible_pixels"] > 0
                for x in finding["palette_pairings_with_matching_alpha"])
     assert finding["best_visible_rgba_pairing"]["visible_pixels"] == 2
+    assert finding["best_visible_rgba_pairing"]["small_palette"] == 0
     assert result["summary"] == {
         "verified_locations": 1, "exact_indexed": 1, "exact_visible_rgba": 1
     }
